@@ -1,0 +1,1 @@
+# Wdes photo gallery server
