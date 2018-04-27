@@ -1,0 +1,73 @@
+{
+  "name": "wdes-photo-gallery-server",
+  "version": "1.0.0",
+  "description": "Wdes photo gallery server",
+  "main": "server.js",
+  "private": true,
+  "scripts": {
+    "install:service": "node service.js",
+    "start": "NODE_ENV=production node server.js",
+    "start:dev": "NODE_ENV=development PORT=13002 PORT_WSS=13003 node server.js",
+    "service:start": "service galerie start",
+    "service:stop": "service galerie stop",
+    "coverage:sum": "NODE_ENV=test istanbul cover src/tests/index.js && rm -rf coverage/",
+    "coverage": "NODE_ENV=test istanbul cover --report text src/tests/index.js && rm -rf coverage/",
+    "test": "NODE_ENV=test node src/tests/index.js",
+    "prettier": "prettier \"*/**/*.js\" --ignore-path ./.prettierignore --write && prettier \"*.js\" --ignore-path ./.prettierignore --write",
+    "preinstall": "sudo apt-get install libjpeg-dev"
+  },
+  "dependencies": {
+    "body-parser": "^1.18.2",
+    "cluster": "^0.7.7",
+    "dotenv": "^5.0.1",
+    "epeg": "git://github.com/falconscript/node-epeg.git",
+    "errorhandler": "^1.5.0",
+    "express": "^4.16.3",
+    "joi": "^13.2.0",
+    "log4js": "^2.5.3",
+    "mysql2": "^1.5.3",
+    "path-to-regexp": "^2.2.1",
+    "toobusy-js": "^0.5.1",
+    "webdav-server": "^2.3.18"
+  },
+  "devDependencies": {
+    "chai": "^4.1.2",
+    "express-useragent": "^1.0.12",
+    "istanbul": "^0.4.5",
+    "joe": "^2.0.2",
+    "joe-reporter-console": "^2.0.1",
+    "node-linux": "^0.1.11",
+    "nyc": "^11.7.1",
+    "pre-commit": "^1.2.2",
+    "prettier": "^1.12.1",
+    "sql-formatter": "^2.3.0",
+    "supertest": "^3.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wdes/wdes-photo-gallery-server.git"
+  },
+  "author": {
+    "name": "William Desportes",
+    "email": "williamdes@wdes.fr",
+    "url": "https://william.wdes.fr"
+  },
+  "bugs": {
+    "web": "https://github.com/wdes/wdes-photo-gallery-server/issues"
+  },
+  "licenses": [
+    {
+      "name": "Mozilla Public License 2.0",
+      "url": "https://raw.githubusercontent.com/wdes/wdes-photo-gallery-server/master/LICENSE"
+    }
+  ],
+  "pre-commit": [
+    "prettier"
+  ],
+  "prettier": {
+    "singleQuote": true,
+    "proseWrap": "never",
+    "trailingComma": "es5",
+    "printWidth": 95
+  }
+}
