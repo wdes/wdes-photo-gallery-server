@@ -12,6 +12,37 @@
 CREATE DATABASE /*!32312 IF NOT EXISTS*/ `wdesphotogallery` /*!40100 DEFAULT CHARACTER SET utf8mb4 */;
 
 USE `wdesphotogallery`;
+
+LOCK TABLES `Api__Scopes` WRITE;
+/*!40000 ALTER TABLE `Api__Scopes` DISABLE KEYS */;
+INSERT INTO `Api__Scopes` VALUES ('api.index','Get api index');
+INSERT INTO `Api__Scopes` VALUES ('auth.login','Login');
+INSERT INTO `Api__Scopes` VALUES ('scopes.list','List scopes');
+/*!40000 ALTER TABLE `Api__Scopes` ENABLE KEYS */;
+UNLOCK TABLES;
+
+LOCK TABLES `Api__TokenAlias` WRITE;
+/*!40000 ALTER TABLE `Api__TokenAlias` DISABLE KEYS */;
+INSERT INTO `Api__TokenAlias` VALUES ('PuBlIcPLYfuLbEAdVESIStAtEmST0KeN','public');
+/*!40000 ALTER TABLE `Api__TokenAlias` ENABLE KEYS */;
+UNLOCK TABLES;
+
+LOCK TABLES `Api__TokenExpirations` WRITE;
+/*!40000 ALTER TABLE `Api__TokenExpirations` DISABLE KEYS */;
+/*!40000 ALTER TABLE `Api__TokenExpirations` ENABLE KEYS */;
+UNLOCK TABLES;
+
+LOCK TABLES `Api__TokenScopes` WRITE;
+/*!40000 ALTER TABLE `Api__TokenScopes` DISABLE KEYS */;
+INSERT INTO `Api__TokenScopes` VALUES ('api.index','public','2018-04-27 15:58:10');
+INSERT INTO `Api__TokenScopes` VALUES ('auth.login','public','2018-04-27 15:58:10');
+/*!40000 ALTER TABLE `Api__TokenScopes` ENABLE KEYS */;
+UNLOCK TABLES;
+
+LOCK TABLES `Sessions` WRITE;
+/*!40000 ALTER TABLE `Sessions` DISABLE KEYS */;
+/*!40000 ALTER TABLE `Sessions` ENABLE KEYS */;
+UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;

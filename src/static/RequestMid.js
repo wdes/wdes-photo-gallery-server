@@ -42,7 +42,7 @@ const RequestMid = {
   },
   tokenMid: function(req, res, next) {
     var token = req.headers.authorization;
-    if (!token) token = 'PuBlIcWGESsze9tbxgHDQ8PQwhMT0KeN';
+    if (!token) token = 'PuBlIcPLYfuLbEAdVESIStAtEmST0KeN';
     else token = token.replace('Bearer ', '');
     req._token = { token: token };
 
