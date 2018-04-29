@@ -1,1 +1,1 @@
-export * from './GaleryFileSystem'
+export * from './GalleryFileSystem'

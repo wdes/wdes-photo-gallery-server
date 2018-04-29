@@ -7,7 +7,7 @@ const fs = require('fs');
 const errorHandler = require('errorhandler');
 const toobusy = require('toobusy-js');
 const webdav = require('webdav-server').v2;
-const galery = require('./fs');
+const gallery = require('./fs');
 const { GALLERY_STORAGE_DIR, GALLERY_STORAGE_DIR_INPUT } = process.env;
 
 const userManager = new webdav.SimpleUserManager();
@@ -27,9 +27,10 @@ const server = new webdav.WebDAVServer({
     treeFilePath: 'data.json',
   },
   autoLoad: {
-    serializers: [new galery.GalerySerializer()],
+    serializers: [new gallery.GallerySerializer()],
   },
 });
+/*
 server.rootFileSystem().addSubTree(server.createExternalContext(), {
   folder1: {
     // /folder1
@@ -42,6 +43,8 @@ server.rootFileSystem().addSubTree(server.createExternalContext(), {
     '2001': {},
   },
 });
+*/
+/*
 server.setFileSystem(
   '/Entree',
   new webdav.PhysicalFileSystem(GALLERY_STORAGE_DIR_INPUT),
@@ -51,8 +54,8 @@ server.setFileSystem(
       new webdav.PhysicalFileSystem(GALLERY_STORAGE_DIR),
       success => {
         server.setFileSystem(
-          '/GaleryFS',
-          new galery.GaleryFileSystem(GALLERY_STORAGE_DIR),
+          '/GalleryFS',
+          new gallery.GalleryFileSystem(GALLERY_STORAGE_DIR),
           () => {
             server.start(s => {
               console.log('Ready on port', s.address().port);
@@ -62,7 +65,13 @@ server.setFileSystem(
       }
     );
   }
-);
+);*/
+
+server.setFileSystem('/', new gallery.GalleryFileSystem(GALLERY_STORAGE_DIR), () => {
+  server.start(s => {
+    console.log('GalleryFileSystem Ready on port', s.address().port);
+  });
+});
 
 global.joi = require('joi');
 global.app = express();

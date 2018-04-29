@@ -68,6 +68,27 @@ CREATE TABLE `Sessions` (
   KEY `expires` (`expires`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Users sessions';
 /*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `gfs__Containers` (
+  `idContainer` int(11) unsigned NOT NULL AUTO_INCREMENT COMMENT 'Container ID',
+  `nameContainer` varchar(255) NOT NULL COMMENT 'Container name',
+  `pathContainer` varchar(1000) NOT NULL COMMENT 'Container path',
+  `metadata` varchar(1000) NOT NULL DEFAULT '{}' COMMENT 'Container metadata',
+  PRIMARY KEY (`idContainer`)
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COMMENT='Containers of Gallery File System';
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `gfs__Structure` (
+  `idContainer` int(11) unsigned NOT NULL,
+  `idContainerParent` int(11) unsigned DEFAULT NULL,
+  UNIQUE KEY `idContainer` (`idContainer`,`idContainerParent`),
+  KEY `gfs__Structure_idContainerParent` (`idContainerParent`),
+  CONSTRAINT `gfs__Structure_idContainer` FOREIGN KEY (`idContainer`) REFERENCES `gfs__Containers` (`idContainer`),
+  CONSTRAINT `gfs__Structure_idContainerParent` FOREIGN KEY (`idContainerParent`) REFERENCES `gfs__Containers` (`idContainer`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Containers of Gallery File System';
+/*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;

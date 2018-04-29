@@ -9,12 +9,12 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-exports.__esModule = true;
+Object.defineProperty(exports, "__esModule", { value: true });
 var path_1 = require("path");
 var webdav_server_1 = require("webdav-server");
 var fs = require("fs");
-var GaleryFileSystemResource = /** @class */ (function () {
-    function GaleryFileSystemResource(data) {
+var GalleryFileSystemResource = /** @class */ (function () {
+    function GalleryFileSystemResource(data) {
         if (!data) {
             this.props = new webdav_server_1.v2.LocalPropertyManager();
             this.locks = new webdav_server_1.v2.LocalLockManager();
@@ -25,61 +25,69 @@ var GaleryFileSystemResource = /** @class */ (function () {
             this.locks = new webdav_server_1.v2.LocalLockManager();
         }
     }
-    return GaleryFileSystemResource;
+    return GalleryFileSystemResource;
 }());
-exports.GaleryFileSystemResource = GaleryFileSystemResource;
-var GalerySerializer = /** @class */ (function () {
-    function GalerySerializer() {
+exports.GalleryFileSystemResource = GalleryFileSystemResource;
+var GallerySerializer = /** @class */ (function () {
+    function GallerySerializer() {
     }
-    GalerySerializer.prototype.uid = function () {
-        return 'GaleryFSSerializer-1.0.0';
+    GallerySerializer.prototype.uid = function () {
+        return 'GalleryFSSerializer-1.0.0';
     };
-    GalerySerializer.prototype.serialize = function (fs, callback) {
+    GallerySerializer.prototype.serialize = function (fs, callback) {
         callback(null, {
             resources: fs.resources,
             rootPath: fs.rootPath
         });
     };
-    GalerySerializer.prototype.unserialize = function (serializedData, callback) {
+    GallerySerializer.prototype.unserialize = function (serializedData, callback) {
         // tslint:disable-next-line:no-use-before-declare
-        var fs = new GaleryFileSystem(serializedData.rootPath);
+        var fs = new GalleryFileSystem(serializedData.rootPath);
         fs.resources = serializedData.resources;
         callback(null, fs);
     };
-    return GalerySerializer;
+    return GallerySerializer;
 }());
-exports.GalerySerializer = GalerySerializer;
-exports.GalerySerializerVersions = {
+exports.GallerySerializer = GallerySerializer;
+exports.GallerySerializerVersions = {
     versions: {
-        '1.0.0': GalerySerializer
+        '1.0.0': GallerySerializer,
     },
     instances: [
-        new GalerySerializer()
+        new GallerySerializer()
     ]
 };
-var GaleryFileSystem = /** @class */ (function (_super) {
-    __extends(GaleryFileSystem, _super);
-    function GaleryFileSystem(rootPath) {
-        var _this = _super.call(this, new GalerySerializer()) || this;
+var GalleryFileSystem = /** @class */ (function (_super) {
+    __extends(GalleryFileSystem, _super);
+    function GalleryFileSystem(rootPath) {
+        var _this = _super.call(this, new GallerySerializer()) || this;
         _this.rootPath = rootPath;
         _this.resources = {
-            '/': new GaleryFileSystemResource()
+            '/': new GalleryFileSystemResource()
         };
         return _this;
     }
-    GaleryFileSystem.prototype.getRealPath = function (path) {
+    GalleryFileSystem.prototype.getRealPath = function (path) {
         var sPath = path.toString();
+        console.log(this.rootPath, sPath.substr(1), sPath);
         return {
             realPath: path_1.join(this.rootPath, sPath.substr(1)),
+            subPath: sPath,
             resource: this.resources[sPath]
         };
     };
-    GaleryFileSystem.prototype._create = function (path, ctx, _callback) {
+    //NOT IMPLEMENTED IN WINDOWS EXPLORER AND WEB EXPLORER
+    /*protected _displayName(path : Path, ctx : webdav.DisplayNameInfo, callback : webdav.ReturnCallback<string>) : void {
+        const { realPath } = this.getRealPath(path);
+        if(realPath !== "/")
+            callback(null, "test-"+realPath)
+    }*/
+    GalleryFileSystem.prototype._create = function (path, ctx, _callback) {
         var _this = this;
         var realPath = this.getRealPath(path).realPath;
         var callback = function (e) {
             if (!e)
-                _this.resources[path.toString()] = new GaleryFileSystemResource();
+                _this.resources[path.toString()] = new GalleryFileSystemResource();
             else if (e)
                 e = webdav_server_1.v2.Errors.ResourceAlreadyExists;
             _callback(e);
@@ -99,7 +107,7 @@ var GaleryFileSystem = /** @class */ (function (_super) {
             }
         }
     };
-    GaleryFileSystem.prototype._delete = function (path, ctx, _callback) {
+    GalleryFileSystem.prototype._delete = function (path, ctx, _callback) {
         var _this = this;
         var realPath = this.getRealPath(path).realPath;
         var callback = function (e) {
@@ -125,7 +133,7 @@ var GaleryFileSystem = /** @class */ (function (_super) {
                         if (--nb === 0)
                             fs.rmdir(realPath, callback);
                     };
-                    files.forEach(function (file) { return _this["delete"](ctx.context, path.getChildPath(file), ctx.depth === -1 ? -1 : ctx.depth - 1, done); });
+                    files.forEach(function (file) { return _this.delete(ctx.context, path.getChildPath(file), ctx.depth === -1 ? -1 : ctx.depth - 1, done); });
                     done();
                 });
             }
@@ -133,18 +141,18 @@ var GaleryFileSystem = /** @class */ (function (_super) {
                 fs.unlink(realPath, callback);
         });
     };
-    GaleryFileSystem.prototype._openWriteStream = function (path, ctx, callback) {
+    GalleryFileSystem.prototype._openWriteStream = function (path, ctx, callback) {
         var _this = this;
         var _a = this.getRealPath(path), realPath = _a.realPath, resource = _a.resource;
         fs.open(realPath, 'w+', function (e, fd) {
             if (e)
                 return callback(webdav_server_1.v2.Errors.ResourceNotFound);
             if (!resource)
-                _this.resources[path.toString()] = new GaleryFileSystemResource();
+                _this.resources[path.toString()] = new GalleryFileSystemResource();
             callback(null, fs.createWriteStream(null, { fd: fd }));
         });
     };
-    GaleryFileSystem.prototype._openReadStream = function (path, ctx, callback) {
+    GalleryFileSystem.prototype._openReadStream = function (path, ctx, callback) {
         var realPath = this.getRealPath(path).realPath;
         fs.open(realPath, 'r', function (e, fd) {
             if (e)
@@ -152,7 +160,7 @@ var GaleryFileSystem = /** @class */ (function (_super) {
             callback(null, fs.createReadStream(null, { fd: fd }));
         });
     };
-    GaleryFileSystem.prototype._move = function (pathFrom, pathTo, ctx, callback) {
+    GalleryFileSystem.prototype._move = function (pathFrom, pathTo, ctx, callback) {
         var _this = this;
         var realPathFrom = this.getRealPath(pathFrom).realPath;
         var realPathTo = this.getRealPath(pathTo).realPath;
@@ -172,7 +180,7 @@ var GaleryFileSystem = /** @class */ (function (_super) {
             else { // destination exists
                 if (!ctx.overwrite)
                     return callback(webdav_server_1.v2.Errors.ResourceAlreadyExists);
-                _this["delete"](ctx.context, pathTo, function (e) {
+                _this.delete(ctx.context, pathTo, function (e) {
                     if (e)
                         return callback(e);
                     rename(true);
@@ -180,8 +188,8 @@ var GaleryFileSystem = /** @class */ (function (_super) {
             }
         });
     };
-    GaleryFileSystem.prototype._size = function (path, ctx, callback) {
-        this.getStatProperty(path, ctx, 'size', callback);
+    GalleryFileSystem.prototype._size = function (path, ctx, callback) {
+        callback(null, 0);
     };
     /**
      * Get a property of an existing resource (object property, not WebDAV property). If the resource doesn't exist, it is created.
@@ -191,44 +199,40 @@ var GaleryFileSystem = /** @class */ (function (_super) {
      * @param propertyName Name of the property to get from the resource
      * @param callback Callback returning the property object of the resource
      */
-    GaleryFileSystem.prototype.getPropertyFromResource = function (path, ctx, propertyName, callback) {
+    GalleryFileSystem.prototype.getPropertyFromResource = function (path, ctx, propertyName, callback) {
         var resource = this.resources[path.toString()];
         if (!resource) {
-            resource = new GaleryFileSystemResource();
+            resource = new GalleryFileSystemResource();
             this.resources[path.toString()] = resource;
         }
         callback(null, resource[propertyName]);
     };
-    GaleryFileSystem.prototype._lockManager = function (path, ctx, callback) {
+    GalleryFileSystem.prototype._lockManager = function (path, ctx, callback) {
         this.getPropertyFromResource(path, ctx, 'locks', callback);
     };
-    GaleryFileSystem.prototype._propertyManager = function (path, ctx, callback) {
+    GalleryFileSystem.prototype._propertyManager = function (path, ctx, callback) {
         this.getPropertyFromResource(path, ctx, 'props', callback);
     };
-    GaleryFileSystem.prototype._readDir = function (path, ctx, callback) {
-        var realPath = this.getRealPath(path).realPath;
-        fs.readdir(realPath, function (e, files) {
-            callback(e ? webdav_server_1.v2.Errors.ResourceNotFound : null, files);
+    GalleryFileSystem.prototype._readDir = function (path, ctx, callback) {
+        var subPath = this.getRealPath(path).subPath;
+        BasicDB.Select('gfs__Containers', ['nameContainer'], ['pathContainer', '?'], null, [subPath], function (err, rows, fields) {
+            var items = [];
+            if (!err) {
+                rows.forEach(function (element) {
+                    items.push(element.nameContainer);
+                });
+            }
+            callback(err ? webdav_server_1.v2.Errors.ResourceNotFound : null, items);
         });
     };
-    GaleryFileSystem.prototype.getStatProperty = function (path, ctx, propertyName, callback) {
-        var realPath = this.getRealPath(path).realPath;
-        fs.stat(realPath, function (e, stat) {
-            if (e)
-                return callback(webdav_server_1.v2.Errors.ResourceNotFound);
-            callback(null, stat[propertyName]);
-        });
+    GalleryFileSystem.prototype._creationDate = function (path, ctx, callback) {
+        callback(null, 0);
     };
-    GaleryFileSystem.prototype.getStatDateProperty = function (path, ctx, propertyName, callback) {
-        this.getStatProperty(path, ctx, propertyName, function (e, value) { return callback(e, value ? value.valueOf() : value); });
+    GalleryFileSystem.prototype._lastModifiedDate = function (path, ctx, callback) {
+        callback(null, 0);
     };
-    GaleryFileSystem.prototype._creationDate = function (path, ctx, callback) {
-        this.getStatDateProperty(path, ctx, 'birthtime', callback);
-    };
-    GaleryFileSystem.prototype._lastModifiedDate = function (path, ctx, callback) {
-        this.getStatDateProperty(path, ctx, 'mtime', callback);
-    };
-    GaleryFileSystem.prototype._type = function (path, ctx, callback) {
+    GalleryFileSystem.prototype._type = function (path, ctx, callback) {
+        return callback(null, webdav_server_1.v2.ResourceType.Directory);
         var realPath = this.getRealPath(path).realPath;
         if (realPath.indexOf('.url') !== -1)
             return callback(webdav_server_1.v2.Errors.ResourceNotFound);
@@ -238,6 +242,6 @@ var GaleryFileSystem = /** @class */ (function (_super) {
             callback(null, stat.isDirectory() ? webdav_server_1.v2.ResourceType.Directory : webdav_server_1.v2.ResourceType.File);
         });
     };
-    return GaleryFileSystem;
+    return GalleryFileSystem;
 }(webdav_server_1.v2.FileSystem));
-exports.GaleryFileSystem = GaleryFileSystem;
+exports.GalleryFileSystem = GalleryFileSystem;

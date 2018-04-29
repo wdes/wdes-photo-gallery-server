@@ -65,8 +65,8 @@ const BasicDB = {
     if (where !== null) where = BasicDB.processWhereChain(where);
     BasicDB.query(BasicDB.select(table_name, columns, where, supp), binds, onSuccess);
   },
-  Function: function(procedure_name, binds, onSuccess, onError) {
-    BasicDB.query('SELECT ' + procedure_name + ' as pval', binds, function(err, rows) {
+  Function: function(function_name, binds, onSuccess, onError) {
+    BasicDB.query('SELECT ' + function_name + ' as pval', binds, function(err, rows) {
       if (err) {
         onError(err);
       } else {

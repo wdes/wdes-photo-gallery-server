@@ -43,6 +43,26 @@ LOCK TABLES `Sessions` WRITE;
 /*!40000 ALTER TABLE `Sessions` DISABLE KEYS */;
 /*!40000 ALTER TABLE `Sessions` ENABLE KEYS */;
 UNLOCK TABLES;
+
+LOCK TABLES `gfs__Containers` WRITE;
+/*!40000 ALTER TABLE `gfs__Containers` DISABLE KEYS */;
+INSERT INTO `gfs__Containers` VALUES (1,'Dépôt de photos','/','{}');
+INSERT INTO `gfs__Containers` VALUES (2,'Photos','/','{}');
+INSERT INTO `gfs__Containers` VALUES (3,'Par an','/Photos','{\r\n	\"type\": \"filter\",\r\n	\"filter\": \"year\"\r\n}');
+INSERT INTO `gfs__Containers` VALUES (4,'Année 2002','/Photos/Par an','{}');
+INSERT INTO `gfs__Containers` VALUES (5,'7 exemplaires','/Photos/Par an/Année 2002','{}');
+/*!40000 ALTER TABLE `gfs__Containers` ENABLE KEYS */;
+UNLOCK TABLES;
+
+LOCK TABLES `gfs__Structure` WRITE;
+/*!40000 ALTER TABLE `gfs__Structure` DISABLE KEYS */;
+INSERT INTO `gfs__Structure` VALUES (1,NULL);
+INSERT INTO `gfs__Structure` VALUES (2,NULL);
+INSERT INTO `gfs__Structure` VALUES (3,2);
+INSERT INTO `gfs__Structure` VALUES (4,3);
+INSERT INTO `gfs__Structure` VALUES (5,4);
+/*!40000 ALTER TABLE `gfs__Structure` ENABLE KEYS */;
+UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
