@@ -239,6 +239,8 @@ var GalleryFileSystem = /** @class */ (function (_super) {
         var _a = this.getRealPath(path), realPath = _a.realPath, subPath = _a.subPath;
         console.log("SIZE path:", this.data[subPath].path);
         fs.stat(this.data[subPath].path, function (err, stats) {
+            if (err)
+                return callback(null, 0);
             callback(null, stats["size"]);
         });
     };

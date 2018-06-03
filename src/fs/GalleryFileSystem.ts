@@ -283,6 +283,8 @@ export class GalleryFileSystem extends webdav.FileSystem
         const { realPath, subPath } = this.getRealPath(path);
         console.log("SIZE path:",this.data[subPath].path);
         fs.stat(this.data[subPath].path, function(err, stats) {
+            if(err)
+                return callback(null, 0);
             callback(null, stats["size"]);
         });
 
