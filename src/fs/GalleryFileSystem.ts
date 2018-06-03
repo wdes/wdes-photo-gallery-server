@@ -57,22 +57,60 @@ export const GallerySerializerVersions = {
         new GallerySerializer()
     ] as GallerySerializer[]
 }
-
+export class File {
+    path: string;
+    nameFile: string;
+    filemtime: number;
+    filectime: number;
+    sha1File: string;
+    constructor(path: string, nameFile: string, filemtime: number, filectime: number, sha1File: string) {
+        this.path = path;
+        this.nameFile = nameFile;
+        this.filectime = filectime;
+        this.filemtime = filemtime;
+        this.sha1File = sha1File;
+    }
+}
+export class Directory {
+    path: string;
+    nameContainer: string;
+    pathContainer: string;
+    filemtime: number;
+    filectime: number;
+    metadata: string;
+    constructor(nameContainer: string, pathContainer: string, metadata: string) {
+        this.nameContainer = nameContainer;
+        this.pathContainer = pathContainer;
+        this.metadata = metadata;
+        this.filectime = 0;
+        this.filemtime = 0;
+        this.path = "";
+    }
+}
 export class GalleryFileSystem extends webdav.FileSystem
 {
     resources : {
         [path : string] : GalleryFileSystemResource
     }
+    data : {
+        [path : string] : Directory | File
+    }
+    _rootPath: string;
 
     constructor(public rootPath : string)
     {
         super(new GallerySerializer());
-
+        this._rootPath = rootPath;
         this.resources = {
             '/': new GalleryFileSystemResource()
         };
+        this.data = {
+            '/': new Directory("Root", "/", "{}")
+        };
     }
-
+    protected galeriePath(path: string) {
+        return path.replace("{galerie}", this._rootPath);
+    }
     protected getRealPath(path : webdav.Path)
     {
         const sPath = path.toString();
@@ -92,8 +130,8 @@ export class GalleryFileSystem extends webdav.FileSystem
 
     protected _create(path : webdav.Path, ctx : webdav.CreateInfo, _callback : webdav.SimpleCallback) : void
     {
-        const { realPath } = this.getRealPath(path);
-
+        const { realPath, subPath } = this.getRealPath(path);
+        console.log("DELETE path:",this.data[subPath].path);
         const callback = (e) => {
             if(!e)
                 this.resources[path.toString()] = new GalleryFileSystemResource();
@@ -124,8 +162,8 @@ export class GalleryFileSystem extends webdav.FileSystem
 
     protected _delete(path : webdav.Path, ctx : webdav.DeleteInfo, _callback : webdav.SimpleCallback) : void
     {
-        const { realPath } = this.getRealPath(path);
-
+        const { realPath, subPath } = this.getRealPath(path);
+        console.log("DELETE path:",this.data[subPath].path);
         const callback = (e) => {
             if(!e)
                 delete this.resources[path.toString()];
@@ -168,8 +206,8 @@ export class GalleryFileSystem extends webdav.FileSystem
 
     protected _openWriteStream(path : webdav.Path, ctx : webdav.OpenWriteStreamInfo, callback : webdav.ReturnCallback<Writable>) : void
     {
-        const { realPath, resource } = this.getRealPath(path);
-
+        const { realPath, resource, subPath  } = this.getRealPath(path);
+        console.log("OPENWS path:",this.data[subPath].path);
         fs.open(realPath, 'w+', (e, fd) => {
             if(e)
                 return callback(webdav.Errors.ResourceNotFound);
@@ -183,12 +221,24 @@ export class GalleryFileSystem extends webdav.FileSystem
 
     protected _openReadStream(path : webdav.Path, ctx : webdav.OpenReadStreamInfo, callback : webdav.ReturnCallback<Readable>) : void
     {
-        const { realPath } = this.getRealPath(path);
-
-        fs.open(realPath, 'r', (e, fd) => {
-            if(e)
+        const { realPath, subPath } = this.getRealPath(path);
+        console.log("OPENRS path:",this.data[subPath].path);
+        fs.readFile(this.data[subPath].path, { encoding: 'base64'}, function(err, data){
+            if (err) {
+              throw err;
+            }
+            // make me a string
+            var output = 'base64,' + data;
+            // show me!
+            console.log(output);
+          });
+        fs.open(this.data[subPath].path, 'r', (e, fd) => {
+            console.log("RS TRY...");
+            if(e){
+                console.log("RS ERROR !");
                 return callback(webdav.Errors.ResourceNotFound);
-
+            }
+            console.log("RS OK !");
             callback(null, fs.createReadStream(null, { fd }));
         })
     }
@@ -230,7 +280,12 @@ export class GalleryFileSystem extends webdav.FileSystem
 
     protected _size(path : webdav.Path, ctx : webdav.SizeInfo, callback : webdav.ReturnCallback<number>) : void
     {
-        callback(null, 0);
+        const { realPath, subPath } = this.getRealPath(path);
+        console.log("SIZE path:",this.data[subPath].path);
+        fs.stat(this.data[subPath].path, function(err, stats) {
+            callback(null, stats["size"]);
+        });
+
     }
 
     /**
@@ -266,35 +321,63 @@ export class GalleryFileSystem extends webdav.FileSystem
     protected _readDir(path : webdav.Path, ctx : webdav.ReadDirInfo, callback : webdav.ReturnCallback<string[] | webdav.Path[]>) : void
     {
         const { subPath } = this.getRealPath(path);
-        BasicDB.Select('gfs__Containers', ['nameContainer'], ['pathContainer','?'], null, [ subPath ], function(err, rows, fields) {
+        BasicDB.Select('gfs__Containers', ['nameContainer', 'idContainer'], ['pathContainer','?'], null, [ subPath ], (err, rows, fields) => {
             var items : string[] = [];
             if (!err) {
-              rows.forEach(function(element) {
-                items.push(element.nameContainer)
+              rows.forEach((element) => {
+                items.push(element.nameContainer);
+                this.data[( (subPath==="/")? "/":subPath+"/" ) +element.nameContainer] = new Directory(element.nameContainer,subPath,"{}");
+              });
+              //callback(err ? webdav.Errors.ResourceNotFound : null, items);
+
+              BasicDB.Select('gfs__Files', ['nameFile', 'filemtime', 'filectime', 'path'], ['idContainer','getIDParentFromPath(?)'], null, [ subPath ], (err, rows, fields) => {
+                  if (!err) {
+                    rows.forEach((element) => {
+                      items.push(element.nameFile);
+                      this.data[subPath+"/"+element.nameFile] = new File(this.galeriePath(element.path), element.nameFile, element.filemtime, element.filectime, "sha1");
+                    });
+                    console.log("NEW",this.data);
+                    callback(err ? webdav.Errors.ResourceNotFound : null, items);
+                  }
+                  //callback(err ? webdav.Errors.ResourceNotFound : null, items);
               });
             }
-            callback(err ? webdav.Errors.ResourceNotFound : null, items);
         });
     }
 
     protected _creationDate(path : webdav.Path, ctx : webdav.CreationDateInfo, callback : webdav.ReturnCallback<number>) : void
     {
-        callback(null, 0);
+        const { realPath, subPath } = this.getRealPath(path);
+        callback(null, this.data[subPath].filectime);
     }
 
     protected _lastModifiedDate(path : webdav.Path, ctx : webdav.LastModifiedDateInfo, callback : webdav.ReturnCallback<number>) : void
     {
-        callback(null, 0);
+        const { realPath, subPath } = this.getRealPath(path);
+        callback(null, this.data[subPath].filemtime);
     }
 
     protected _type(path : webdav.Path, ctx : webdav.TypeInfo, callback : webdav.ReturnCallback<webdav.ResourceType>) : void
     {
-        return callback(null, webdav.ResourceType.Directory);
-        const { realPath } = this.getRealPath(path);
+        const { realPath, subPath } = this.getRealPath(path);
+        console.log(path, realPath, subPath, this.data.hasOwnProperty(subPath));
+
+
+        if(this.data.hasOwnProperty(subPath) === false)
+            return callback(webdav.Errors.ResourceNotFound);
 
         if(realPath.indexOf('.url') !== -1)
             return callback(webdav.Errors.ResourceNotFound);
 
+        switch(this.data[subPath].constructor) {
+            case File:
+                return callback(null, webdav.ResourceType.File);
+            case Directory:
+                return callback(null, webdav.ResourceType.Directory);
+            default:
+                console.log(typeof this.data[subPath]);
+                return callback(null, webdav.ResourceType.NoResource);
+        }
         fs.stat(realPath, (e, stat) => {
             if(e)
                 return callback(webdav.Errors.ResourceNotFound);

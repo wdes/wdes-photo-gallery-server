@@ -17,12 +17,34 @@ export declare const GallerySerializerVersions: {
     };
     instances: GallerySerializer[];
 };
+export declare class File {
+    path: string;
+    nameFile: string;
+    filemtime: number;
+    filectime: number;
+    sha1File: string;
+    constructor(path: string, nameFile: string, filemtime: number, filectime: number, sha1File: string);
+}
+export declare class Directory {
+    path: string;
+    nameContainer: string;
+    pathContainer: string;
+    filemtime: number;
+    filectime: number;
+    metadata: string;
+    constructor(nameContainer: string, pathContainer: string, metadata: string);
+}
 export declare class GalleryFileSystem extends webdav.FileSystem {
     rootPath: string;
     resources: {
         [path: string]: GalleryFileSystemResource;
     };
+    data: {
+        [path: string]: Directory | File;
+    };
+    _rootPath: string;
     constructor(rootPath: string);
+    protected galeriePath(path: string): string;
     protected getRealPath(path: webdav.Path): {
         realPath: string;
         subPath: string;

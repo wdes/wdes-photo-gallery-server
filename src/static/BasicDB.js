@@ -117,7 +117,7 @@ const BasicDB = {
     BasicDB.query('DELETE FROM ' + table_name + ' WHERE ' + where, binds, onSuccess);
   },
   query: function(request, binds, cb) {
-    //logger.debug("[MYSQL] "+request+" | "+JSON.stringify(binds));
+    logger.debug('[MYSQL] ' + request + ' | ' + JSON.stringify(binds));
     return mysql_pool.execute(request, binds, cb);
   },
   batchRequests: function(batch, success, error) {

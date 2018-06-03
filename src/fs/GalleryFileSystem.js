@@ -57,16 +57,46 @@ exports.GallerySerializerVersions = {
         new GallerySerializer()
     ]
 };
+var File = /** @class */ (function () {
+    function File(path, nameFile, filemtime, filectime, sha1File) {
+        this.path = path;
+        this.nameFile = nameFile;
+        this.filectime = filectime;
+        this.filemtime = filemtime;
+        this.sha1File = sha1File;
+    }
+    return File;
+}());
+exports.File = File;
+var Directory = /** @class */ (function () {
+    function Directory(nameContainer, pathContainer, metadata) {
+        this.nameContainer = nameContainer;
+        this.pathContainer = pathContainer;
+        this.metadata = metadata;
+        this.filectime = 0;
+        this.filemtime = 0;
+        this.path = "";
+    }
+    return Directory;
+}());
+exports.Directory = Directory;
 var GalleryFileSystem = /** @class */ (function (_super) {
     __extends(GalleryFileSystem, _super);
     function GalleryFileSystem(rootPath) {
         var _this = _super.call(this, new GallerySerializer()) || this;
         _this.rootPath = rootPath;
+        _this._rootPath = rootPath;
         _this.resources = {
             '/': new GalleryFileSystemResource()
         };
+        _this.data = {
+            '/': new Directory("Root", "/", "{}")
+        };
         return _this;
     }
+    GalleryFileSystem.prototype.galeriePath = function (path) {
+        return path.replace("{galerie}", this._rootPath);
+    };
     GalleryFileSystem.prototype.getRealPath = function (path) {
         var sPath = path.toString();
         console.log(this.rootPath, sPath.substr(1), sPath);
@@ -84,7 +114,8 @@ var GalleryFileSystem = /** @class */ (function (_super) {
     }*/
     GalleryFileSystem.prototype._create = function (path, ctx, _callback) {
         var _this = this;
-        var realPath = this.getRealPath(path).realPath;
+        var _a = this.getRealPath(path), realPath = _a.realPath, subPath = _a.subPath;
+        console.log("DELETE path:", this.data[subPath].path);
         var callback = function (e) {
             if (!e)
                 _this.resources[path.toString()] = new GalleryFileSystemResource();
@@ -109,7 +140,8 @@ var GalleryFileSystem = /** @class */ (function (_super) {
     };
     GalleryFileSystem.prototype._delete = function (path, ctx, _callback) {
         var _this = this;
-        var realPath = this.getRealPath(path).realPath;
+        var _a = this.getRealPath(path), realPath = _a.realPath, subPath = _a.subPath;
+        console.log("DELETE path:", this.data[subPath].path);
         var callback = function (e) {
             if (!e)
                 delete _this.resources[path.toString()];
@@ -143,7 +175,8 @@ var GalleryFileSystem = /** @class */ (function (_super) {
     };
     GalleryFileSystem.prototype._openWriteStream = function (path, ctx, callback) {
         var _this = this;
-        var _a = this.getRealPath(path), realPath = _a.realPath, resource = _a.resource;
+        var _a = this.getRealPath(path), realPath = _a.realPath, resource = _a.resource, subPath = _a.subPath;
+        console.log("OPENWS path:", this.data[subPath].path);
         fs.open(realPath, 'w+', function (e, fd) {
             if (e)
                 return callback(webdav_server_1.v2.Errors.ResourceNotFound);
@@ -153,10 +186,24 @@ var GalleryFileSystem = /** @class */ (function (_super) {
         });
     };
     GalleryFileSystem.prototype._openReadStream = function (path, ctx, callback) {
-        var realPath = this.getRealPath(path).realPath;
-        fs.open(realPath, 'r', function (e, fd) {
-            if (e)
+        var _a = this.getRealPath(path), realPath = _a.realPath, subPath = _a.subPath;
+        console.log("OPENRS path:", this.data[subPath].path);
+        fs.readFile(this.data[subPath].path, { encoding: 'base64' }, function (err, data) {
+            if (err) {
+                throw err;
+            }
+            // make me a string
+            var output = 'base64,' + data;
+            // show me!
+            console.log(output);
+        });
+        fs.open(this.data[subPath].path, 'r', function (e, fd) {
+            console.log("RS TRY...");
+            if (e) {
+                console.log("RS ERROR !");
                 return callback(webdav_server_1.v2.Errors.ResourceNotFound);
+            }
+            console.log("RS OK !");
             callback(null, fs.createReadStream(null, { fd: fd }));
         });
     };
@@ -189,7 +236,11 @@ var GalleryFileSystem = /** @class */ (function (_super) {
         });
     };
     GalleryFileSystem.prototype._size = function (path, ctx, callback) {
-        callback(null, 0);
+        var _a = this.getRealPath(path), realPath = _a.realPath, subPath = _a.subPath;
+        console.log("SIZE path:", this.data[subPath].path);
+        fs.stat(this.data[subPath].path, function (err, stats) {
+            callback(null, stats["size"]);
+        });
     };
     /**
      * Get a property of an existing resource (object property, not WebDAV property). If the resource doesn't exist, it is created.
@@ -214,28 +265,54 @@ var GalleryFileSystem = /** @class */ (function (_super) {
         this.getPropertyFromResource(path, ctx, 'props', callback);
     };
     GalleryFileSystem.prototype._readDir = function (path, ctx, callback) {
+        var _this = this;
         var subPath = this.getRealPath(path).subPath;
-        BasicDB.Select('gfs__Containers', ['nameContainer'], ['pathContainer', '?'], null, [subPath], function (err, rows, fields) {
+        BasicDB.Select('gfs__Containers', ['nameContainer', 'idContainer'], ['pathContainer', '?'], null, [subPath], function (err, rows, fields) {
             var items = [];
             if (!err) {
                 rows.forEach(function (element) {
                     items.push(element.nameContainer);
+                    _this.data[((subPath === "/") ? "/" : subPath + "/") + element.nameContainer] = new Directory(element.nameContainer, subPath, "{}");
+                });
+                //callback(err ? webdav.Errors.ResourceNotFound : null, items);
+                BasicDB.Select('gfs__Files', ['nameFile', 'filemtime', 'filectime', 'path'], ['idContainer', 'getIDParentFromPath(?)'], null, [subPath], function (err, rows, fields) {
+                    if (!err) {
+                        rows.forEach(function (element) {
+                            items.push(element.nameFile);
+                            _this.data[subPath + "/" + element.nameFile] = new File(_this.galeriePath(element.path), element.nameFile, element.filemtime, element.filectime, "sha1");
+                        });
+                        console.log("NEW", _this.data);
+                        callback(err ? webdav_server_1.v2.Errors.ResourceNotFound : null, items);
+                    }
+                    //callback(err ? webdav.Errors.ResourceNotFound : null, items);
                 });
             }
-            callback(err ? webdav_server_1.v2.Errors.ResourceNotFound : null, items);
         });
     };
     GalleryFileSystem.prototype._creationDate = function (path, ctx, callback) {
-        callback(null, 0);
+        var _a = this.getRealPath(path), realPath = _a.realPath, subPath = _a.subPath;
+        callback(null, this.data[subPath].filectime);
     };
     GalleryFileSystem.prototype._lastModifiedDate = function (path, ctx, callback) {
-        callback(null, 0);
+        var _a = this.getRealPath(path), realPath = _a.realPath, subPath = _a.subPath;
+        callback(null, this.data[subPath].filemtime);
     };
     GalleryFileSystem.prototype._type = function (path, ctx, callback) {
-        return callback(null, webdav_server_1.v2.ResourceType.Directory);
-        var realPath = this.getRealPath(path).realPath;
+        var _a = this.getRealPath(path), realPath = _a.realPath, subPath = _a.subPath;
+        console.log(path, realPath, subPath, this.data.hasOwnProperty(subPath));
+        if (this.data.hasOwnProperty(subPath) === false)
+            return callback(webdav_server_1.v2.Errors.ResourceNotFound);
         if (realPath.indexOf('.url') !== -1)
             return callback(webdav_server_1.v2.Errors.ResourceNotFound);
+        switch (this.data[subPath].constructor) {
+            case File:
+                return callback(null, webdav_server_1.v2.ResourceType.File);
+            case Directory:
+                return callback(null, webdav_server_1.v2.ResourceType.Directory);
+            default:
+                console.log(typeof this.data[subPath]);
+                return callback(null, webdav_server_1.v2.ResourceType.NoResource);
+        }
         fs.stat(realPath, function (e, stat) {
             if (e)
                 return callback(webdav_server_1.v2.Errors.ResourceNotFound);
